@@ -14,12 +14,27 @@ app.get('/', (req, res) => {
 
 app.get('/products', (req, res) => {
     if(products.length === 0) {
-        res.status(404).json(
+        return res.status(404).json(
             { message: 'No products found' }
         );
-        return;
     }
-    res.status(200).json(products);
+
+    const { category } = req.query;
+
+    if(!category) {
+        return res.status(200).json(products);
+    }
+    
+    const filteredProds = products.filter(prdt => 
+        prdt.category.toLowerCase().includes(category.toLowerCase())
+    );
+
+    if(filteredProds.length === 0) {
+        return res.status(404).json({
+            message: "No products found in this category"
+        });
+    }
+    res.status(200).json(filteredProds)
 });
 
 app.post('/products', (req, res) => {
