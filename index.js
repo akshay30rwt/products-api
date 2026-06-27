@@ -27,7 +27,7 @@ app.get('/products', async (req, res) => {
 
         if(!category) {
             if(products.length === 0) {
-                return res.status(400).json({
+                return res.status(404).json({
                     message: 'There are no products'
                 });
             }
@@ -46,6 +46,31 @@ app.get('/products', async (req, res) => {
         res.status(200).json(filteredProducts);
     }
     catch(error) {
+        res.status(500).json({
+            message: error.message
+        });
+    }
+});
+
+app.get('/products/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const product = await Product.findById(id);
+        if(!product) {
+            return res.status(404).json({
+                message: 'No product with this ID'
+            });
+        }
+
+        res.status(200).json(product);
+    }
+    catch(error) {
+        if(error.name === 'CastError') {
+            return res.status(400).json({
+                message: 'Invalid ID'
+            });
+        }
         res.status(500).json({
             message: error.message
         });
@@ -72,12 +97,12 @@ app.post('/products', async (req, res) => {
 app.put('/products/:id', async (req, res) => {
     try {
         const { name, price, category, stock } = req.body;
-        const _id = req.params.id;
+        const { id } = req.params;
 
-        const updatedProduct = await Product.findByIdAndUpdate(_id, { name, price, category, stock }, { new: true });
+        const updatedProduct = await Product.findByIdAndUpdate(id, { name, price, category, stock }, { new: true });
         if(!updatedProduct) {
             return res.status(404).json({
-                message: `Product with ID: ${_id} not found`
+                message: `Product with ID: ${id} not found`
             });
         }
         
@@ -87,6 +112,11 @@ app.put('/products/:id', async (req, res) => {
         });
     }
     catch(error) {
+        if(error.name === 'CastError') {
+            return res.status(400).json({
+                message: 'Invalid ID'
+            });
+        }
         res.status(500).json({
             message: error.message
         });
@@ -95,12 +125,12 @@ app.put('/products/:id', async (req, res) => {
 
 app.delete('/products/:id', async (req, res) => {
     try {
-        const _id = req.params.id;
+        const { id } = req.params;
 
-        const deletedProduct = await Product.findByIdAndDelete(_id);
+        const deletedProduct = await Product.findByIdAndDelete(id);
         if(!deletedProduct) {
             return res.status(404).json({
-                message: `Invalid ID: ${_id}`
+                message: `Invalid ID: ${id}`
             });
         }
 
@@ -110,6 +140,11 @@ app.delete('/products/:id', async (req, res) => {
         });
     } 
     catch(error) {
+        if(error.name === 'CastError') {
+            return res.status(400).json({
+                message: 'Invalid ID'
+            });
+        }
         res.status(500).json({
             message: error.message
         });
