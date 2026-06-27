@@ -8,6 +8,7 @@ A REST API to manage products built with Node.js, Express.js and MongoDB.
 - Get a product by ID
 - Update a product
 - Delete a product
+- Filter products by category
 
 ## Tech Stack
 - Node.js
