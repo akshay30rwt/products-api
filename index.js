@@ -69,40 +69,51 @@ app.post('/products', async (req, res) => {
     }
 });
 
-app.put('/products/:id', (req, res) => {
-    const { product, category } = req.body;
-    const productId = Number(req.params.id);
-    const index = products.findIndex(prdt => prdt.id === productId);
+app.put('/products/:id', async (req, res) => {
+    try {
+        const { name, price, category, stock } = req.body;
+        const _id = req.params.id;
 
-    if(index === -1) {
-        res.status(404).json(
-            { message: `Product with ID: ${productId} not found` }
-        );
-        return;
+        const updatedProduct = await Product.findByIdAndUpdate(_id, { name, price, category, stock }, { new: true });
+        if(!updatedProduct) {
+            return res.status(404).json({
+                message: `Product with ID: ${_id} not found`
+            });
+        }
+        
+        res.status(200).json({
+            message: 'Product updated successfully',
+            updatedProduct
+        });
     }
-
-    products[index].product = product;
-    products[index].category = category;
-    res.status(200).json(
-        { message: `ID: ${productId} | Product: '${product}' updated successfully` }
-    );
+    catch(error) {
+        res.status(500).json({
+            message: error.message
+        });
+    }
 });
 
-app.delete('/products/:id', (req, res) => {
-    const productId = Number(req.params.id);
-    const index = products.findIndex(prdt => prdt.id === productId);
+app.delete('/products/:id', async (req, res) => {
+    try {
+        const _id = req.params.id;
 
-    if(index === -1) {
-        res.status(404).json(
-            { message: `Product with ID: ${productId} not found` }
-        );
-        return;
+        const deletedProduct = await Product.findByIdAndDelete(_id);
+        if(!deletedProduct) {
+            return res.status(404).json({
+                message: `Invalid ID: ${_id}`
+            });
+        }
+
+        res.status(200).json({
+            message: 'Product deleted successfully',
+            deletedProduct
+        });
+    } 
+    catch(error) {
+        res.status(500).json({
+            message: error.message
+        });
     }
-    const deletedProduct = products[index];
-    products.splice(index, 1);
-    res.status(200).json(
-        { message: `ID: ${productId} | Product: '${deletedProduct.product}' deleted successfully` }
-    );
 });
 
 app.listen(PORT, () => {
