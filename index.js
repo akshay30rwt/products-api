@@ -1,55 +1,72 @@
 const express = require('express');
+const mongoose = require('mongoose');
+const Product = require('./models/product');
 const app = express();
 
 const PORT = 3000;
 
 app.use(express.json());
 
-let products = []
-let nextId = 1;
-
-app.get('/', (req, res) => {
-    res.status(200).json({ message: 'Products API is running' });
-})
-
-app.get('/products', (req, res) => {
-    if(products.length === 0) {
-        return res.status(404).json(
-            { message: 'No products found' }
-        );
-    }
-
-    const { category } = req.query;
-
-    if(!category) {
-        return res.status(200).json(products);
-    }
-    
-    const filteredProds = products.filter(prdt => 
-        prdt.category.toLowerCase().includes(category.toLowerCase())
-    );
-
-    if(filteredProds.length === 0) {
-        return res.status(404).json({
-            message: "No products found in this category"
-        });
-    }
-    res.status(200).json(filteredProds)
+mongoose.connect('mongodb://127.0.0.1:27017/productdb').then(() => {
+    console.log('Connected to MongoDB');
+}).catch((error) => {
+    console.error('Connection failed', error);
 });
 
-app.post('/products', (req, res) => {
-    const { product, category } = req.body;
-    const newProduct = {
-        id: nextId,
-        product: product,
-        category: category
-    }
-    nextId++;
-    products.push(newProduct);
 
-    res.status(201).json(
-        { message: `Product: '${product}' added successfully`}
-    );
+app.get('/', (req, res) => {
+    res.status(200).json({
+        message: 'Products API is running'
+    });
+});
+
+app.get('/products', async (req, res) => {
+    try {
+        const products = await Product.find();
+        const { category } = req.query;
+
+        if(!category) {
+            if(products.length === 0) {
+                return res.status(400).json({
+                    message: 'There are no products'
+                });
+            }
+            return res.status(200).json(products);
+        }
+
+        const filteredProducts = products.filter(product => 
+            product.category.toLowerCase().includes(category.toLowerCase())
+        );
+
+        if(filteredProducts.length === 0) {
+            return res.status(404).json({
+                message: `No ${category} category products here`
+            });
+        }
+        res.status(200).json(filteredProducts);
+    }
+    catch(error) {
+        res.status(500).json({
+            message: error.message
+        });
+    }
+});
+
+app.post('/products', async (req, res) => {
+    try {
+        const { name, price, category, stock } = req.body;
+        const product = new Product({ name, price, category, stock });
+        await product.save();
+
+        res.status(201).json({
+            message: 'Product added successfully',
+            product
+        });
+    } catch(error) {
+        res.status(500).json({
+            message: error.message
+        });
+    }
 });
 
 app.put('/products/:id', (req, res) => {
